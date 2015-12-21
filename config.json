@@ -1,0 +1,31 @@
+{
+  "staticPath": {
+    "css": "css",
+	"cssUi": "css/ui",
+	"js": "js",
+	"es6": "es6",
+	"image": "images"
+  },
+  "browserifyPath": "es6/",
+  "jsOutputPath": "js/",
+  "cssOutputPath": "css/",
+  "copyFolders": ["img"],
+  "jsCopyFolders": ["lib", "ui"],
+  "cssCopyFolders": ["ui"],
+  "watchPath": {
+	"test": {
+	  "path": "test/es6/",
+	  "staticPath": ""
+	}
+  },
+  "pathMap": {
+    "rootBuild": "build/",
+    "rootRev": "rev/"
+  },
+  "browserProxy": "localhost/",
+  "staticFolder": "static/",
+  "defaultFolder": "test",
+  "defaultWatchFolders": ["test"],
+  "author": "zangzhan",
+  "license": "MIT"
+}
