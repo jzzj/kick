@@ -65,7 +65,7 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		var path = modify.path;
 		
 		if(!fs.existsSync(path)){
-			return console.log(path, "²»´æÔÚ£¡");
+			return console.log(path, " does not exists !");
 		}
 		if(fs.lstatSync(path).isDirectory()){
 			return console.log(path+" is dir");
@@ -92,7 +92,7 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		}
 		
 		if(modify.type === 'added'){
-			fileDevManager.update(tmp, rootPath+browserifyPath);
+			fileDevManager.update(tmp);
 			fileDevManager.updateMap();
 		}
 		

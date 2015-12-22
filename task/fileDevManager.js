@@ -11,13 +11,12 @@ var fileDevManager = (function(){
 		/**
 		* 根据传入的文件夹前缀和当前依赖文件的路径返回正确的前缀和依赖文件的路径
 		*/
-		
-		var filePathManager = (function(){
+		var rfolderFile = /(.+\/)(.+)$/,
+			filePathManager = (function(){
 			var rprevs = /\.\.\//g;
 			var rstripFile = /(.+\/).+?\/$|^.+?\/$/;
 			var rfolders = /(?:\.\/)(.+\/)(.+)$/;
 			var rcurrentPath = /^\.\//;
-			var rfolderFile = /(.+\/)(.+)$/;
 			var pathCache = {};
 			return {
 				getCurrentFilePathWithPrefix: function (file, prefix){
@@ -62,12 +61,19 @@ var fileDevManager = (function(){
 		
 		return function(results, prefix){
 			if(!Array.isArray(results)){
+				if(!prefix){
+					var ret = results.match(rfolderFile);
+					results = ret[2];
+					prefix = ret[1];
+				}
 				results = [results];
 			}
+			
 			//results.length=8;
 			/**
 			* 每个文件对应该文件的所在路径前缀 => 为了得到依赖文件的正确路径！
 			*/
+			
 			results.forEach(function(tmp){
 				var ret = filePathManager.getCurrentFilePathWithPrefix(tmp);
 				if(ret){
@@ -84,7 +90,7 @@ var fileDevManager = (function(){
 				//tmp = tmp.replace(rprevs, '');
 				
 				if(!fs.existsSync(tmp)){
-					console.log(tmp, "不存在");
+					console.log('can\'t find the ', tmp);
 					return [];
 				}
 				
