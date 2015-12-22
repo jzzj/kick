@@ -49,13 +49,14 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 	//监听多个文件夹的变化，去更新依赖、被依赖的文件并判断是否刷新浏览器
 	while(watchFolders.length){
 		var tmp = watchFolders.pop();
-		var path = watchPath[tmp].path;
+		var currentWatch = watchPath[tmp];
+		var path = currentWatch.path;
 		gulp.watch(path+'**/*.js', doModify);
 		readFiles(path, fileDevManager.build);
 		
 		//监听css和html
-		gulp.watch(tmp+"/*.html").on('change', reload);
-		gulp.watch(tmp+"/"+watchPath[tmp].staticPath+Constant.staticPath.css+"**/*.css").on('change', reload);
+		gulp.watch(currentWatch.htmlPath+"*.html").on('change', reload);
+		gulp.watch(tmp+"/"+currentWatch.staticPath+Constant.staticPath.css+"**/*.css").on('change', reload);
 	}
 	
 	isBrowserSync&&browserWatch();

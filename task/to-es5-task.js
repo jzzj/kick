@@ -13,7 +13,6 @@ gulp.task('to-es5', function(){
 	readFiles(watchPath, toBrowserify);
 });
 
-var rfile = /(.+)\./;
 function toBrowserify(results){
 	//遍历browserifyPath下的所有文件去进行browserify
 	results.forEach(function(item){
