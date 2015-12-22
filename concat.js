@@ -7,7 +7,7 @@ var Constant = require('./Constant');
 
 var rootFolder = Constant.rootFolder;
 var rootPath = Constant.rootPath;
-var rootHtmlPath = Constant.rootHtmlPath;
+var rootHtmlPath = Constant.watchPath[rootFolder].htmlPath;
 var commonHtml = Constant.commonHtml;
 var pathMap = Constant.pathMap;
 
