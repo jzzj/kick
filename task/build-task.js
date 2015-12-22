@@ -15,9 +15,9 @@ var staticPath = Constant.staticPath;
 var cssPath = staticPath.css;
 var jsPath = staticPath.js;
 var imagePath = staticPath.image;
+var rootFolder = Constant.rootFolder;
 
 var rootPath = Constant.rootPath;
-var rootHtmlPath = Constant.rootHtmlPath;
 var commonHtml = Constant.commonHtml;
 var pathMap = Constant.pathMap;
 
@@ -97,7 +97,8 @@ gulp.task('common-html', function () {
 gulp.task('rev', revControllPath);
 
 function revControllPath(){
-	var jsons = [];
+	var jsons = [],
+		htmlPath = Constant.watchPath[rootFolder].htmlPath;
 	jsons.push(pathMap.rootRev+cssPath+'/*.json');
 	cssCopyFolders.forEach(function(copyFolder){
 		if(copyFolder){
@@ -110,11 +111,11 @@ function revControllPath(){
 			jsons.push(pathMap.rootRev+rootPath+jsOutputPath+copyFolder+'/*.json');
 		}
 	});
-	jsons.push(rootHtmlPath+'*.html');
+	jsons.push(htmlPath+'*.html');
 	
 	gulp.src(jsons)   //- 读取 rev-manifest.json 文件以及需要进行css名替换的文件
         .pipe(revCollector())                                   //- 执行文件内css名的替换
-        .pipe(gulp.dest(pathMap.rootBuild+rootHtmlPath));       //- 替换后的文件输出的目录
+        .pipe(gulp.dest(pathMap.rootBuild+htmlPath));       //- 替换后的文件输出的目录
 }
 
 gulp.task('build', ['css', 'js', 'js.copyFiles', 'css.copyFiles', 'images', 'common-html', 'copyFiles']);

@@ -15,7 +15,8 @@
   "watchPath": {
 	"test": {
 	  "path": "test/es6/",
-	  "staticPath": ""
+	  "staticPath": "",
+	  "htmlPath": "test/html/"
 	}
   },
   "pathMap": {
