@@ -92,7 +92,7 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 				.pipe(gulp.dest(project+"/"+currentFolder.staticPath+jsOutputPath+onlyCopyPath[folderIdx]));
 		}
 		
-		if(modify.type === 'added'){
+		if(['added', 'renamed'].indexOf(modify.type)!=-1){
 			fileDevManager.update(tmp);
 			fileDevManager.updateMap();
 		}
