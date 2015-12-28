@@ -90,7 +90,7 @@ var fileDevManager = (function(){
 				//tmp = tmp.replace(rprevs, '');
 				
 				if(!fs.existsSync(tmp)){
-					console.log('can\'t find the ', tmp);
+					console.log('can\'t find the', tmp);
 					return [];
 				}
 				
@@ -117,14 +117,21 @@ var fileDevManager = (function(){
 		return FileDevMaps;
 	},
 	
+	remove = function(item){
+		var map = FileDevMaps[item];
+		if(map){
+			map.devs.forEach(function(item){
+				var tmp = FileDevMaps[item].devBy;
+				tmp.splice(tmp.indexOf(item), 1);
+			});
+			delete FileDevMaps[item];
+		}
+		return FileDevMaps;
+	},
+	
 	build = function(){
 		updateFileDevMaps.apply(null, arguments);
 		updateDevsMap();
-		//console.dir(FileDevMaps)
-		//console.log(FileDevMaps['service/accountInfoService.js'])
-		//console.log(FileDevMaps['service/tokenService.js'])
-		//console.log(FileDevMaps['app.js'])
-		//console.log(FileDevMaps['directive/multiSelectDirective.js'])
 		console.log('map is ready!');
 	},
 	
@@ -143,7 +150,6 @@ var fileDevManager = (function(){
 				devBy = [];
 			}
 			for(var k in FileDevMaps){
-				//console.log(FileDevMaps[k],k)
 				var current = FileDevMaps[k];
 				var cdevs = current.devs;
 				var tmpArr;
@@ -166,6 +172,7 @@ var fileDevManager = (function(){
 		update: updateFileDevMaps,
 		updateMap: updateDevsMap,
 		build: build,
+		remove: remove,
 		get: getFileDevMaps
 	};
 })();

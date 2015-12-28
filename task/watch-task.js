@@ -44,7 +44,7 @@ gulp.task('watch.copyFiles', function(){
 
 gulp.task('watch', ['watch.copyFiles'], function(){
 	var rpath = new RegExp(['(?:', (process.cwd()+"/").replace(/\\/g, '\\/'),')(.+)'].join(''));
-	var allToES5Queue = {priority: [], normal: []};
+	
 	
 	//监听多个文件夹的变化，去更新依赖、被依赖的文件并判断是否刷新浏览器
 	while(watchFolders.length){
@@ -65,13 +65,6 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		
 		var path = modify.path;
 		
-		if(!fs.existsSync(path)){
-			return console.log(path, " does not exists !");
-		}
-		if(fs.lstatSync(path).isDirectory()){
-			return console.log(path+" is dir");
-		}
-		
 		path = path.replace(/\\/g, "/");
 		
 		try{
@@ -81,6 +74,20 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 			console.log(e);
 		}
 		
+		if(modify.type === "deleted"){
+			fileDevManager.remove(tmp);
+			console.log(module, 'has been deleted.');
+			return;
+		}
+		
+		if(!fs.existsSync(modify.path)){
+			return console.log(modify.path, " does not exists !");
+		}
+		if(fs.lstatSync(modify.path).isDirectory()){
+			return console.log(modify.path+" is dir");
+		}
+		
+		var allToES5Queue = {priority: [], normal: []};
 		var folder = (tmp.match(/.+\//) || [])[0];
 		var project = folder.split('/').shift();
 		var currentFolder = watchPath[project];
@@ -134,16 +141,15 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		}
 		
 		var updateList = queue.priority.concat(queue.normal).concat(tmp);
-		
 		updateList.filter(function(a, b){
 			return updateList.indexOf(a)===b;
 		}).forEach(function(i){
-			fileDevManager.update(i, rootPath+browserifyPath);
+			fileDevManager.update(i);
 		});
 		
 		fileDevManager.updateMap();
 		var devMap = fileDevManager.get()[tmp];
-		console.log(tmp, devMap ? devMap : tmp+"'s dependency is wrong!");
+		console.log(tmp, devMap ? devMap : tmp+" has no dependencies!");
 		return false;
 	}
 });
