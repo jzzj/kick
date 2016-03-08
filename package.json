@@ -35,7 +35,9 @@
     "gulp-util": "^3.0.6",
     "gulp-watch": "^4.2.4",
     "iconv-lite": "^0.4.13",
-    "imagemin-pngquant": "^4.2.0"
+    "imagemin-pngquant": "^4.2.0",
+	"vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
   },
   "keywords": [
     "browerify",

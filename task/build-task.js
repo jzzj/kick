@@ -1,13 +1,13 @@
 var gulp = require('gulp'),
-    uglify = require('gulp-uglify'),	//uglifyÊÇÒ»¿îjavascript´úÂëÓÅ»¯¹¤¾ß£¬¿ÉÒÔ½âÎö£¬Ñ¹ËõºÍ³ó»¯javascript¡£
-    jshint = require('gulp-jshint'),	//jshintÊÇÒ»¸öÕì²âjavascript´úÂëÖĞ´íÎóºÍÇ±ÔÚÎÊÌâµÄ¹¤¾ß¡£
-    concat = require('gulp-concat');	//ºÏ²¢ÎÄ¼ş
+    uglify = require('gulp-uglify'),	//uglifyæ˜¯ä¸€æ¬¾javascriptä»£ç ä¼˜åŒ–å·¥å…·ï¼Œå¯ä»¥è§£æï¼Œå‹ç¼©å’Œä¸‘åŒ–javascriptã€‚
+    jshint = require('gulp-jshint'),	//jshintæ˜¯ä¸€ä¸ªä¾¦æµ‹javascriptä»£ç ä¸­é”™è¯¯å’Œæ½œåœ¨é—®é¢˜çš„å·¥å…·ã€‚
+    concat = require('gulp-concat');	//åˆå¹¶æ–‡ä»¶
 
-var minifyCss = require('gulp-minify-css');                     //- Ñ¹ËõCSSÎªÒ»ĞĞ£»
-var rev = require('gulp-rev');                                  //- ¶ÔÎÄ¼şÃû¼ÓMD5ºó×º
-var revCollector = require('gulp-rev-collector');               //- Â·¾¶Ìæ»»
+var minifyCss = require('gulp-minify-css');                     //- å‹ç¼©CSSä¸ºä¸€è¡Œï¼›
+var rev = require('gulp-rev');                                  //- å¯¹æ–‡ä»¶ååŠ MD5åç¼€
+var revCollector = require('gulp-rev-collector');               //- è·¯å¾„æ›¿æ¢
 
-// var imagemin = require('gulp-imagemin');						//Í¼Æ¬Ñ¹Ëõ
+// var imagemin = require('gulp-imagemin');						//å›¾ç‰‡å‹ç¼©
 // var pngquant = require('imagemin-pngquant');
 
 var Constant = require('../Constant.js');
@@ -23,13 +23,13 @@ var pathMap = Constant.pathMap;
 
 var cssPath = rootPath+cssPath;
 gulp.task('css', function() {
-    gulp.src([cssPath+'/*.css'])    							//- ĞèÒª´¦ÀíµÄcssÎÄ¼ş£¬·Åµ½Ò»¸ö×Ö·û´®Êı×éÀï
-        //.pipe(concat('wap.min.css'))                          //- ºÏ²¢ºóµÄÎÄ¼şÃû
-        .pipe(minifyCss())                                      //- Ñ¹Ëõ´¦Àí³ÉÒ»ĞĞ
-        .pipe(rev())                                            //- ÎÄ¼şÃû¼ÓMD5ºó×º
-        .pipe(gulp.dest(pathMap.rootBuild+cssPath))             //- Êä³öÎÄ¼ş±¾µØ
-        .pipe(rev.manifest())                                   //- Éú³ÉÒ»¸örev-manifest.json
-        .pipe(gulp.dest(pathMap.rootRev+cssPath));              //- ½« rev-manifest.json ±£´æµ½ rev Ä¿Â¼ÄÚ
+    gulp.src([cssPath+'/*.css'])    							//- éœ€è¦å¤„ç†çš„cssæ–‡ä»¶ï¼Œæ”¾åˆ°ä¸€ä¸ªå­—ç¬¦ä¸²æ•°ç»„é‡Œ
+        //.pipe(concat('wap.min.css'))                          //- åˆå¹¶åçš„æ–‡ä»¶å
+        .pipe(minifyCss())                                      //- å‹ç¼©å¤„ç†æˆä¸€è¡Œ
+        .pipe(rev())                                            //- æ–‡ä»¶ååŠ MD5åç¼€
+        .pipe(gulp.dest(pathMap.rootBuild+cssPath))             //- è¾“å‡ºæ–‡ä»¶æœ¬åœ°
+        .pipe(rev.manifest())                                   //- ç”Ÿæˆä¸€ä¸ªrev-manifest.json
+        .pipe(gulp.dest(pathMap.rootRev+cssPath));              //- å°† rev-manifest.json ä¿å­˜åˆ° rev ç›®å½•å†…
 });
 
 var jsPath = rootPath+jsPath;
@@ -113,9 +113,9 @@ function revControllPath(){
 	});
 	jsons.push(htmlPath+'*.html');
 	
-	gulp.src(jsons)   //- ¶ÁÈ¡ rev-manifest.json ÎÄ¼şÒÔ¼°ĞèÒª½øĞĞcssÃûÌæ»»µÄÎÄ¼ş
-        .pipe(revCollector())                                   //- Ö´ĞĞÎÄ¼şÄÚcssÃûµÄÌæ»»
-        .pipe(gulp.dest(pathMap.rootBuild+htmlPath));       //- Ìæ»»ºóµÄÎÄ¼şÊä³öµÄÄ¿Â¼
+	gulp.src(jsons)   //- è¯»å– rev-manifest.json æ–‡ä»¶ä»¥åŠéœ€è¦è¿›è¡Œcssåæ›¿æ¢çš„æ–‡ä»¶
+        .pipe(revCollector())                                   //- æ‰§è¡Œæ–‡ä»¶å†…cssåçš„æ›¿æ¢
+        .pipe(gulp.dest(pathMap.rootBuild+htmlPath));       //- æ›¿æ¢åçš„æ–‡ä»¶è¾“å‡ºçš„ç›®å½•
 }
 
 gulp.task('build', ['css', 'js', 'js.copyFiles', 'css.copyFiles', 'images', 'common-html', 'copyFiles']);

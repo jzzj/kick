@@ -26,7 +26,7 @@ var staticFolder = Constant.staticFolder;
 
 var toES5 = makeToES5(browserifyPath, jsOutputPath);
 
-//°ÑÒ»Ğ©²»ĞèÒªbrowserify¹ÜÀíÄ£¿éµÄ½øĞĞ¼òµ¥µÄÎÄ¼ş¿½±´
+//æŠŠä¸€äº›ä¸éœ€è¦browserifyç®¡ç†æ¨¡å—çš„è¿›è¡Œç®€å•çš„æ–‡ä»¶æ‹·è´
 var copyFolders = Constant.jsCopyFolders;
 gulp.task('watch.copyFiles', function(){
 	copyFolders.forEach(function(copyFolder){
@@ -46,23 +46,22 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 	var rpath = new RegExp(['(?:', (process.cwd()+"/").replace(/\\/g, '\\/'),')(.+)'].join(''));
 	
 	
-	//¼àÌı¶à¸öÎÄ¼ş¼ĞµÄ±ä»¯£¬È¥¸üĞÂÒÀÀµ¡¢±»ÒÀÀµµÄÎÄ¼ş²¢ÅĞ¶ÏÊÇ·ñË¢ĞÂä¯ÀÀÆ÷
+	//ç›‘å¬å¤šä¸ªæ–‡ä»¶å¤¹çš„å˜åŒ–ï¼Œå»æ›´æ–°ä¾èµ–ã€è¢«ä¾èµ–çš„æ–‡ä»¶å¹¶åˆ¤æ–­æ˜¯å¦åˆ·æ–°æµè§ˆå™¨
 	while(watchFolders.length){
 		var tmp = watchFolders.pop();
 		var currentWatch = watchPath[tmp];
 		var path = currentWatch.path;
-		gulp.watch(path+'**/*.js', doModify);
+		gulp.watch(path+'**/*.js', doWatch);
 		readFiles(path, fileDevManager.build);
 		
-		//¼àÌıcssºÍhtml
+		//ç›‘å¬csså’Œhtml
 		gulp.watch(currentWatch.htmlPath+"*.html").on('change', reload);
 		gulp.watch(tmp+"/"+currentWatch.staticPath+Constant.staticPath.css+"**/*.css").on('change', reload);
 	}
 	
 	isBrowserSync&&browserWatch();
-	
-	function doModify(modify){
-		
+
+	function doWatch(modify){
 		var path = modify.path;
 		
 		path = path.replace(/\\/g, "/");
@@ -70,13 +69,13 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		try{
 			var tmp = path.match(rpath)[1];
 		}catch(e){
-			console.log('Â·¾¶ÅäÖÃÓĞÎó£¡');
+			console.log('è·¯å¾„é…ç½®æœ‰è¯¯ï¼');
 			console.log(e);
 		}
 		
 		if(modify.type === "deleted"){
-			fileDevManager.remove(tmp);
-			console.log(module, 'has been deleted.');
+			fileDevManager.remove(tmp);	//ä½¿ç”¨doModifyæ–¹æ³•éœ€è¦è°ƒç”¨è¿™å¥ä»£ç ï¼
+			console.log(tmp, 'has been deleted.');
 			return;
 		}
 		
@@ -86,8 +85,7 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		if(fs.lstatSync(modify.path).isDirectory()){
 			return console.log(modify.path+" is dir");
 		}
-		
-		var allToES5Queue = {priority: [], normal: []};
+
 		var folder = (tmp.match(/.+\//) || [])[0];
 		var project = folder.split('/').shift();
 		var currentFolder = watchPath[project];
@@ -98,6 +96,17 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 			return gulp.src(tmp)
 				.pipe(gulp.dest(project+"/"+currentFolder.staticPath+jsOutputPath+onlyCopyPath[folderIdx]));
 		}
+
+		doModify(modify, path, tmp);
+		//doBundle(modify, path, tmp);
+	}
+
+	function doBundle(modify, path, tmp){
+		toES5(tmp);
+	}
+	
+	function doModify(modify, path, tmp){
+		var allToES5Queue = {priority: [], normal: []};
 		
 		if(['added', 'renamed'].indexOf(modify.type)!=-1){
 			fileDevManager.update(tmp);
@@ -107,7 +116,7 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		var maps = fileDevManager.get();
 		var devBy = (maps[tmp] || {devBy: []}).devBy || [];
 		
-		//»ñÈ¡±àÒë¶ÓÁĞ
+		//è·å–ç¼–è¯‘é˜Ÿåˆ—
 		var queue = getToES5Queue(devBy.concat(tmp), allToES5Queue);
 		queue.priority = queue.priority.filter(function(item, idx){
 			return queue.priority.indexOf(item)===idx;

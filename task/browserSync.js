@@ -1,5 +1,5 @@
 var gulp = require('gulp');
-//Í¬²½Ë¢ĞÂä¯ÀÀÆ÷
+//åŒæ­¥åˆ·æ–°æµè§ˆå™¨
 var Constant = require('../Constant.js');
 var browserSync = require('browser-sync').create();
 var reload      = browserSync.reload;
@@ -10,13 +10,13 @@ var rootPath = Constant.rootPath;
 gulp.task('browser-sync', browserWatch);
 function browserWatch(){
 	browserSync.init({
-		/*¾²Ì¬·şÎñÆ÷*/
+		/*é™æ€æœåŠ¡å™¨*/
 		/*
 		server: {
             baseDir: "./"
         }
 		*/
-        /*´úÀí*/
+        /*ä»£ç†*/
 		proxy: browserProxy
     });
     

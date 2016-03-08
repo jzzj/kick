@@ -9,12 +9,12 @@ var jsOutputPath = Constant.jsOutputPath;
 var toES5 = makeToES5(browserifyPath, jsOutputPath);
 var watchPath = Constant.watchPath[rootFolder].path;
 
-gulp.task('to-es5', function(){
+gulp.task('to-es5', ['watch.copyFiles'], function(){
 	readFiles(watchPath, toBrowserify);
 });
 
 function toBrowserify(results){
-	//遍历browserifyPath下的所有文件去进行browserify
+	//閬嶅巻browserifyPath涓嬬殑鎵�鏈夋枃浠跺幓杩涜browserify
 	results.forEach(function(item){
 		toES5(watchPath+item);
 	});
