@@ -1,6 +1,6 @@
 var _slice = [].slice;
 var Callbacks = function(options){
-	var unique = options.unique;
+	var unique = (options || "").unique;
 	var queue = [],
 		callbacks = {
 		add: function(fn){

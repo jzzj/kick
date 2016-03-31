@@ -2,31 +2,36 @@ var fs = require('fs');
 var path = require('path');
 var Async = require('./Promise.js').Async;
 
-//递归遍历当前文件夹下的所有文件
-var dirFiles = (function(){
-	var results = [], pending = 0;
-	return function readFiles(dir, done){
-		
-		fs.readdir(dir, function(err, list){
-			if (err) throw err;
-			pending = list.length+pending;
-			list.forEach(function(file){
-				var tmp = path.resolve(dir, file);
-				fs.stat(tmp, function(err, stat) {
-					--pending;
-					if (stat && stat.isDirectory()){
-						pending++;
-						readFiles(tmp, done);
-						pending--;
-					}else{
-						results.push(tmp);
-						if (!pending) done(results);
-					}
-				});
-			});
+function readAllFiles(judge){
+	
+	return function readFiles(dir){
+		var list = fs.readdirSync(dir);
+		var results = [];
+		list.forEach(function(file){
+			var tmp = path.resolve(dir, file);
+			var stat = fs.statSync(tmp);
+			if (stat && stat.isDirectory()){
+				results = results.concat(readFiles(tmp));
+			}else{
+				if(judge(tmp)){
+					results.push(tmp);
+				}
+
+				
+			} 
 		});
+		return results;
 	}
-}());
+}
+
+//递归遍历当前文件夹下的所有文件
+var dirFiles = readAllFiles(function(){return true});
+
+var readFilesWithSuffix = function(suffix){
+	return readAllFiles(function(filename){
+		return new RegExp('\.'+suffix+'$').test(filename);
+	});
+}
 
 //遍历当前文件夹下的文件
 function readFiles(dir, done){
@@ -47,6 +52,38 @@ function readFiles(dir, done){
 			});
 		});
 	});
+}
+
+function deleteFolderRecursive(path) {
+    var files = [];
+    if( fs.existsSync(path) ) {
+    	files = fs.readdirSync(path);
+        files.forEach(function(file,index){
+            var curPath = path + "/" + file;
+            if(fs.existsSync(curPath)&&fs.statSync(curPath).isDirectory()) { // recurse
+                deleteFolderRecursive(curPath);
+            } else if(fs.existsSync(curPath)){ // delete file
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
+    }
+}
+
+function readFolders(path){
+	var folders = [];
+	if(fs.existsSync(path)){
+		files = fs.readdirSync(path);
+		files.forEach(function(file){
+			var curPath = (/\/$/.test(path) ? path : path + "/") + file;
+			if(fs.existsSync(curPath)&&fs.statSync(curPath).isDirectory()){
+				folders.push(curPath);
+				folders = folders.concat(readFolders(curPath));
+			}
+		});
+		
+	}
+	return folders;
 }
 
 function readFilesWithFolders(folders, done){
@@ -72,7 +109,10 @@ function readFilesWithFolders(folders, done){
 module.exports = {
 	dirFiles: dirFiles,
 	readFiles: readFiles,
+	readFolders: readFolders,
 	readFilesWithFolders: readFilesWithFolders,
+	readFilesWithSuffix: readFilesWithSuffix,
+	deleteFolderRecursive: deleteFolderRecursive,
 	readFile: fs.readFile,
 	readFileSync: fs.readFileSync,
 };

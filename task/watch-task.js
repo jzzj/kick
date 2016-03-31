@@ -4,34 +4,35 @@ var fs = require('fs');
 var Constant = require('../Constant.js');
 var FileUtil = require('../util/FileUtil.js');
 var browserSync = require('./browserSync.js');
-var fileDevManager = require('./fileDevManager.js');
+var fileDepManager = require('./fileDepManager.js');
 var makeToES5 = require('./toES5.js');
+var toCss = require('./toCss.js');
 
 
-var readFiles = FileUtil.readFiles;
+var readFilesWithSuffix = FileUtil.readFilesWithSuffix;
 var browserWatch = browserSync.browserWatch;
 var reload = browserSync.reload;
-var staticPath = Constant.staticPath;
-var rootFolder = Constant.rootFolder;
+var jsSourceSuffix = Constant.jsSourceSuffix;
+var cssSourceSuffix = Constant.cssSourceSuffix;
+/*
 var rootPath = Constant.rootPath;
+var outputPath = Constant.outputPath;
 var onlyCopyPath = Constant.onlyCopyPath;
 var browserifyPath = Constant.browserifyPath;
-var rmainFile = Constant.rmainFile;
 var jsOutputPath = Constant.jsOutputPath;
+*/
+
+var rmainFile = Constant.rmainFile;
 var isBrowserSync = Constant.isBrowserSync;
-var watchPath = Constant.watchPath;
-var watchFolders = Constant.watchFolders;
-var staticFolder = Constant.staticFolder;
+var watchProjects = Constant.watchProjects;
+var projects = Constant.projects;
 
-
-var toES5 = makeToES5(browserifyPath, jsOutputPath);
-
-//把一些不需要browserify管理模块的进行简单的文件拷贝
-var copyFolders = Constant.jsCopyFolders;
-gulp.task('watch.copyFiles', function(){
-	copyFolders.forEach(function(copyFolder){
-		watchFolders.forEach(function(folder){
-			var tmp = watchPath[folder];	
+var toES5 = makeToES5();
+/*
+function copyFiles(folders, type){
+	folders.forEach(function(copyFolder){
+		watchProjects.forEach(function(folder){
+			var tmp = projects[folder];	
 			var srcFolder = folder+"/"+tmp.staticPath+browserifyPath+copyFolder,
 				destFolder = folder+"/"+tmp.staticPath+jsOutputPath+copyFolder;
 			
@@ -39,66 +40,90 @@ gulp.task('watch.copyFiles', function(){
 				.pipe(gulp.dest(destFolder));
 		});
 	});
-	
-});
+}
 
-gulp.task('watch', ['watch.copyFiles'], function(){
+//进行简单的文件拷贝
+var copyFolders = Constant.jsCopyFolders;
+gulp.task('watch.copyFiles', function(){
+	copyFiles(Constant.jsExcludePath, 'js');
+	copyFiles(Constant.cssExcludePath, 'css');
+	copyFiles(Constant.imgExcludePath, 'img');
+});
+*/
+
+function copyFiles(source, destination, project){
+	return gulp.src(project+"/"+source)
+		.on('end', function(){
+			reload();
+		})
+		.pipe(gulp.dest(destination));
+}
+
+gulp.task('watch', /*['watch.copyFiles'], */function(){
 	var rpath = new RegExp(['(?:', (process.cwd()+"/").replace(/\\/g, '\\/'),')(.+)'].join(''));
 	
 	
 	//监听多个文件夹的变化，去更新依赖、被依赖的文件并判断是否刷新浏览器
-	while(watchFolders.length){
-		var tmp = watchFolders.pop();
-		var currentWatch = watchPath[tmp];
-		var path = currentWatch.path;
-		gulp.watch(path+'**/*.js', doWatch);
-		readFiles(path, fileDevManager.build);
+	while(watchProjects.length){
+		var tmp = watchProjects.pop();
+		var path = tmp+"/";
+		gulp.watch(path+'**/*.'+jsSourceSuffix, doWatch(doModify));
+
+		var files = readFilesWithSuffix(jsSourceSuffix)(path);
+		//console.log(files);
+		fileDepManager.build(files, path);
 		
+		gulp.watch(path+"**/*."+cssSourceSuffix, doWatch(function(modify, path, file){
+			toCss(file);
+		}));
+
+		var current = projects[tmp];
+		if(current&&current.copy&&Array.isArray(current.copy)){
+			current.copy.forEach(function(item){
+				if(item.source&&item.destination){
+					gulp.watch(tmp+"/"+item.source, copyFiles.bind(null, item.source, item.destination, tmp));
+				}
+			});
+		}
+
+
 		//监听css和html
-		gulp.watch(currentWatch.htmlPath+"*.html").on('change', reload);
-		gulp.watch(tmp+"/"+currentWatch.staticPath+Constant.staticPath.css+"**/*.css").on('change', reload);
+		gulp.watch(path+"**/*.html").on('change', reload);
+		gulp.watch(path+"**/*.css").on('change', reload);
+
 	}
 	
 	isBrowserSync&&browserWatch();
 
-	function doWatch(modify){
-		var path = modify.path;
+	function doWatch(callback){
+		return function(modify){
+			var path = modify.path;
 		
-		path = path.replace(/\\/g, "/");
-		
-		try{
-			var tmp = path.match(rpath)[1];
-		}catch(e){
-			console.log('路径配置有误！');
-			console.log(e);
-		}
-		
-		if(modify.type === "deleted"){
-			fileDevManager.remove(tmp);	//使用doModify方法需要调用这句代码！
-			console.log(tmp, 'has been deleted.');
-			return;
-		}
-		
-		if(!fs.existsSync(modify.path)){
-			return console.log(modify.path, " does not exists !");
-		}
-		if(fs.lstatSync(modify.path).isDirectory()){
-			return console.log(modify.path+" is dir");
-		}
-
-		var folder = (tmp.match(/.+\//) || [])[0];
-		var project = folder.split('/').shift();
-		var currentFolder = watchPath[project];
-		var folderIdx = (onlyCopyPath || []).map(function(item){return currentFolder.path+item}).indexOf( folder );
-		if(folderIdx != -1){
-			console.log('only copy ', tmp);
+			path = path.replace(/\\/g, "/");
 			
-			return gulp.src(tmp)
-				.pipe(gulp.dest(project+"/"+currentFolder.staticPath+jsOutputPath+onlyCopyPath[folderIdx]));
+			try{
+				var tmp = path.match(rpath)[1];
+			}catch(e){
+				console.log('路径配置有误！');
+				console.log(e);
+			}
+			
+			if(modify.type === "deleted"){
+				if(callback === doModify){
+					fileDepManager.remove(tmp);	//使用doModify方法需要调用这句代码！
+				}
+				console.log(tmp, 'has been deleted.');
+				return;
+			}
+			
+			if(!fs.existsSync(modify.path)){
+				return console.log(modify.path, " does not exists !");
+			}
+			if(fs.lstatSync(modify.path).isDirectory()){
+				return console.log(modify.path+" is dir");
+			}
+			callback(modify, path, tmp);
 		}
-
-		doModify(modify, path, tmp);
-		//doBundle(modify, path, tmp);
 	}
 
 	function doBundle(modify, path, tmp){
@@ -109,11 +134,11 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		var allToES5Queue = {priority: [], normal: []};
 		
 		if(['added', 'renamed'].indexOf(modify.type)!=-1){
-			fileDevManager.update(tmp);
-			fileDevManager.updateMap();
+			fileDepManager.update(tmp);
+			fileDepManager.updateMap();
 		}
 		
-		var maps = fileDevManager.get();
+		var maps = fileDepManager.get();
 		var devBy = (maps[tmp] || {devBy: []}).devBy || [];
 		
 		//获取编译队列
@@ -139,7 +164,7 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 			resolve: function(file){
 				reload();
 				afterToES5(queue.normal);
-				console.log(file, 'is done,', (new Date()).toLocaleString());
+				console.log(file, 'has been complied at', (new Date()).toLocaleString());
 			}
 		});
 		
@@ -153,11 +178,11 @@ gulp.task('watch', ['watch.copyFiles'], function(){
 		updateList.filter(function(a, b){
 			return updateList.indexOf(a)===b;
 		}).forEach(function(i){
-			fileDevManager.update(i);
+			fileDepManager.update(i);
 		});
 		
-		fileDevManager.updateMap();
-		var devMap = fileDevManager.get()[tmp];
+		fileDepManager.updateMap();
+		var devMap = fileDepManager.get()[tmp];
 		console.log(tmp, devMap ? devMap : tmp+" has no dependencies!");
 		return false;
 	}

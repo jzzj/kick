@@ -5,56 +5,56 @@ var config = require('./config.json');
 for(var i in config){
 	exports[i] = config[i];
 }
-var rootFolder = config.defaultFolder;
-var watchFolders = config.defaultWatchFolders;
-var staticFolder = config.watchPath[rootFolder].staticPath;
+var project = config.defaultProject;
+var useProject = true;
+var specifiedProject = false;
+var watchProjects = config.defaultWatchProjects;
 
 while(args.length){
 	switch(args.shift()){
-        case "-fd":
-		case "--folder":
-			rootFolder = args.shift();
+        case "-p":
+		case "--project":
+			project = args.shift();
+			specifiedProject = true;
+		break;
+		case "-i":
+		case "--init":
+			useProject = false;
 		break;
 		case "-nbs":
 		case "--noBrowserSync":
 			isBrowserSync = false;
 		break;
-		case "-sf":
-		case "--staticFolder":
-			staticFolder = args.shift() || "";
-		break;
 		case "-wf":
 		case "--watchFolder":
-			watchFolders.push(args.shift());
+			watchProjects.push(args.shift());
 		break;
 	}
 }
 
 var fs = require('fs');
-console.log(rootFolder, "文件夹");
+console.log(project, "project");
 
-if(!fs.existsSync(rootFolder)){ //判断文件夹是否存在
-	return console.log(rootFolder+"不存在！");
+if(!fs.existsSync(project)){ //判断文件夹是否存在
+	return console.log(project+"不存在！");
 }
 
-for(var i=0; i<watchFolders.length; i++){
-	if(!fs.existsSync(watchFolders[i])){
-		console.log(watchFolders[i], "doesn't exists!");
-		watchFolders.splice(i, 1);
+for(var i=0; i<watchProjects.length; i++){
+	if(!fs.existsSync(watchProjects[i])){
+		console.log(watchProjects[i], "doesn't exists!");
+		watchProjects.splice(i, 1);
 		i--;
 	}
 }
 
 
-exports.rootFolder = rootFolder;
+exports.project = project;
 
-exports.rootPath = rootFolder+"/"+staticFolder;
-
-exports.watchFolders = watchFolders;
-exports.commonHtml = rootFolder+"/common";
-exports.onlyCopyPath = ['lib/', 'ui/'];
+exports.watchProjects = watchProjects;
 //优先编译并会刷新浏览器的文件匹配 => function/reg
-exports.rmainFile = /es6\/[^\\\/]+$/;
+exports.rmainFile = /page/;
 
-exports.browserProxy = config.browserProxy+rootFolder;
+exports.browserProxy = config.browserProxy+project;
 exports.isBrowserSync = isBrowserSync;
+exports.specifiedProject = specifiedProject;
+exports.useProject = useProject;

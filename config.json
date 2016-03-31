@@ -1,32 +1,24 @@
 {
-  "staticPath": {
-    "css": "css",
-	"cssUi": "css/ui",
-	"js": "js",
-	"es6": "es6",
-	"image": "images"
-  },
-  "browserifyPath": "es6/",
-  "jsOutputPath": "js/",
-  "cssOutputPath": "css/",
-  "copyFolders": ["img"],
-  "jsCopyFolders": ["lib", "ui"],
-  "cssCopyFolders": ["ui"],
-  "watchPath": {
-	"test": {
-	  "path": "test/es6/",
-	  "staticPath": "",
-	  "htmlPath": "test/html/"
-	}
+  "projects": {
+  	"events": {
+      "copy": [{
+        "source": "views/*.php",
+        "destination": "../protected/views/events"
+      }]
+  	}
   },
   "pathMap": {
-    "rootBuild": "build/",
+    "rootBuild": "build/static/",
     "rootRev": "rev/"
   },
   "browserProxy": "localhost/",
-  "staticFolder": "static/",
-  "defaultFolder": "test",
-  "defaultWatchFolders": ["test"],
+  "jsSourceSuffix": "es6",
+  "cssSourceSuffix": "scss",
+  "htmlSourceSuffix": "php",
+  "defaultProject": "events",
+  "publicProjects": ["core"],
+  "defaultWatchProjects": ["events"],
+  "initProjects": ["events", "test"],
   "author": "zangzhan",
   "license": "MIT"
 }

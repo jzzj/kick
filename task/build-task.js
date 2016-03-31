@@ -3,119 +3,221 @@ var gulp = require('gulp'),
     jshint = require('gulp-jshint'),	//jshint是一个侦测javascript代码中错误和潜在问题的工具。
     concat = require('gulp-concat');	//合并文件
 
+var fs = require('fs');
+var useref = require('gulp-useref');
+var imagemin = require('gulp-imagemin');
 var minifyCss = require('gulp-minify-css');                     //- 压缩CSS为一行；
 var rev = require('gulp-rev');                                  //- 对文件名加MD5后缀
 var revCollector = require('gulp-rev-collector');               //- 路径替换
-
-// var imagemin = require('gulp-imagemin');						//图片压缩
-// var pngquant = require('imagemin-pngquant');
+var Promise = require('../util/Promise.js').Promise;
+var FileUtil = require('../util/FileUtil.js');
+var readFilesWithSuffix = FileUtil.readFilesWithSuffix;
+var deleteFolderRecursive = FileUtil.deleteFolderRecursive;
 
 var Constant = require('../Constant.js');
-var staticPath = Constant.staticPath;
-var cssPath = staticPath.css;
-var jsPath = staticPath.js;
-var imagePath = staticPath.image;
-var rootFolder = Constant.rootFolder;
+var runSequence = require('run-sequence').use(gulp);
+var jsSourceSuffix = Constant.jsSourceSuffix;
+var cssSourceSuffix = Constant.cssSourceSuffix;
+var htmlSourceSuffix = Constant.htmlSourceSuffix;
+var project = Constant.project;
 
-var rootPath = Constant.rootPath;
-var commonHtml = Constant.commonHtml;
-var pathMap = Constant.pathMap;
+var pathMap = Constant.pathMap,
+    buildPath = pathMap.rootBuild,
+    revPath = pathMap.rootRev,
+    publicProjects = Constant.publicProjects || [];
 
-var cssPath = rootPath+cssPath;
-gulp.task('css', function() {
-    gulp.src([cssPath+'/*.css'])    							//- 需要处理的css文件，放到一个字符串数组里
+function replaceContents(files){
+    
+    return gulp.src(files)
+    .pipe(modify(version))
+    //.pipe(modify(swapStuff))
+    .pipe(gulp.dest('aa'));
+}
+
+var through2 = require('through2');
+function modify(modifier) {  
+  return through2.obj(function(file, encoding, done) {
+    var content = modifier(String(file.contents));
+    file.contents = new Buffer(content);
+    this.push(file);
+    done();
+  });
+}
+
+function version(data) {  
+  return data.replace(/('|")__JSKZ__MAP__('|")/, '{a:1}');
+}
+
+gulp.task('complie', function(){
+    replaceContents(project+'**/router.js');
+});
+
+//拷贝源码
+function copySource(project, excludes, promise){
+    
+    return gulp.src([project+"/**"].concat(excludes), {base: project})
+        .pipe(gulp.dest(buildPath+project));
+}
+
+//copy public projects
+function copyPublic(project){
+    publicProjects.filter(function(){
+        return publicProjects.indexOf(project)===-1;
+    }).forEach(function(item){
+        return gulp.src([item+"/**", '!**/*.map', '!**/*.'+jsSourceSuffix, '!**/*.'+cssSourceSuffix], {base: item})
+            .pipe(gulp.dest(buildPath+item));
+    })
+    
+}
+
+//process css
+function processCss(project){
+    return gulp.src(project+'/**/*.css', {base: project})                                //- 需要处理的css文件，放到一个字符串里
         //.pipe(concat('wap.min.css'))                          //- 合并后的文件名
         .pipe(minifyCss())                                      //- 压缩处理成一行
         .pipe(rev())                                            //- 文件名加MD5后缀
-        .pipe(gulp.dest(pathMap.rootBuild+cssPath))             //- 输出文件本地
+        .pipe(gulp.dest(buildPath+project))             //- 输出文件本地
         .pipe(rev.manifest())                                   //- 生成一个rev-manifest.json
-        .pipe(gulp.dest(pathMap.rootRev+cssPath));              //- 将 rev-manifest.json 保存到 rev 目录内
-});
-
-var jsPath = rootPath+jsPath;
-gulp.task('js', function(){
-	gulp.src(jsPath+'/*.js')
-		.pipe(jshint.reporter('default'))
-		.pipe(uglify())
-		.pipe(rev())
-        .pipe(gulp.dest(pathMap.rootBuild+jsPath))
-        .pipe(rev.manifest())
-        .pipe(gulp.dest(pathMap.rootRev+jsPath));
-});
-
-var jsCopyFolders = Constant.jsCopyFolders;
-var jsOutputPath = Constant.jsOutputPath;
-gulp.task('js.copyFiles', function(){
-	jsCopyFolders.forEach(function(copyFolder){
-		var folder = rootPath+jsOutputPath+copyFolder;
-		gulp.src(folder+'/*.js')
-			.pipe(jshint.reporter('default'))
-			.pipe(uglify())
-			.pipe(rev())
-			.pipe(gulp.dest(pathMap.rootBuild+folder))
-			.pipe(rev.manifest())
-			.pipe(gulp.dest(pathMap.rootRev+folder));
-		
-	});
-});
-
-var cssCopyFolders = Constant.cssCopyFolders;
-var cssOutputPath = Constant.cssOutputPath;
-gulp.task('css.copyFiles', function(){
-	cssCopyFolders.forEach(function(copyFolder){
-		var folder = rootPath+cssOutputPath+copyFolder;
-		gulp.src([folder+'/*.css'])
-			.pipe(minifyCss())
-			.pipe(rev())
-			.pipe(gulp.dest(pathMap.rootBuild+folder))
-			.pipe(rev.manifest())
-			.pipe(gulp.dest(pathMap.rootRev+folder));
-	});
-});
-
-var imagesPath = rootPath+imagePath;
-gulp.task('images', function () {
-    return gulp.src(imagesPath+'/*')
-        .pipe(gulp.dest(pathMap.rootBuild+imagesPath))
-});
-
-var copyFolders = Constant.copyFolders;
-gulp.task('copyFiles', function(){
-	copyFolders.forEach(function(copyFolder){
-		var folder = rootPath+copyFolder;
-		return gulp.src(folder+'/*')
-			.pipe(gulp.dest(pathMap.rootBuild+folder));
-	});
-});
-
-gulp.task('common-html', function () {
-    return gulp.src(commonHtml+'/*')
-       
-        .pipe(gulp.dest(pathMap.rootBuild+commonHtml))
-});
-
-gulp.task('rev', revControllPath);
-
-function revControllPath(){
-	var jsons = [],
-		htmlPath = Constant.watchPath[rootFolder].htmlPath;
-	jsons.push(pathMap.rootRev+cssPath+'/*.json');
-	cssCopyFolders.forEach(function(copyFolder){
-		if(copyFolder){
-			jsons.push(pathMap.rootRev+rootPath+cssOutputPath+copyFolder+'/*.json');
-		}
-	});
-	jsons.push(pathMap.rootRev+jsPath+'/*.json');
-	jsCopyFolders.forEach(function(copyFolder){
-		if(copyFolder){
-			jsons.push(pathMap.rootRev+rootPath+jsOutputPath+copyFolder+'/*.json');
-		}
-	});
-	jsons.push(htmlPath+'*.html');
-	
-	gulp.src(jsons)   //- 读取 rev-manifest.json 文件以及需要进行css名替换的文件
-        .pipe(revCollector())                                   //- 执行文件内css名的替换
-        .pipe(gulp.dest(pathMap.rootBuild+htmlPath));       //- 替换后的文件输出的目录
+        .pipe(gulp.dest(revPath+project+'/css'));              //- 将 rev-manifest.json 保存到 rev 目录内
 }
 
-gulp.task('build', ['css', 'js', 'js.copyFiles', 'css.copyFiles', 'images', 'common-html', 'copyFiles']);
+//process js
+function processJs(project){
+    return gulp.src(project+'/**/*.js')
+        //.pipe(jshint.reporter('default'))
+        .pipe(uglify())
+        .pipe(rev())
+        .pipe(gulp.dest(buildPath+project))
+        .pipe(rev.manifest())
+        .pipe(gulp.dest(revPath+project+'/js'));
+}
+
+//process img
+function processImg(project){
+    return gulp.src([project+'/**/*.jpg',project+'/**/*.png',project+'/**/*.gif',project+'/**/*.icon',project+'/**/*.tif'])
+        .pipe(imagemin())
+        //.pipe(gulp.dest(project))
+        .pipe(rev())
+        .pipe(gulp.dest(buildPath+project))
+        .pipe(rev.manifest())
+        .on('end', function(){
+            runSequence('build:revImages');
+        })
+        .pipe(gulp.dest(revPath+project+'/image'));
+}
+
+//process rev html refs
+function revControllPath(project){
+    var isPublic = publicProjects.indexOf(project)!==-1;
+    var jsons = [
+        revPath+project+'/js/*.json',
+        revPath+project+'/css/*.json',
+        revPath+project+'/restore/*.json',
+        buildPath+( isPublic ? "" : project+"/" )+'**/*.'+htmlSourceSuffix
+    ];
+    function isDoRev(file){
+
+        if(fs.existsSync(file)){
+            //console.log(fs.readFileSync(file, "utf-8"), jsons)
+            return gulp.src(jsons)                                 
+                .pipe(revCollector())                       
+                .pipe(gulp.dest(buildPath+(isPublic ? "" : project))); 
+        }else{
+            setTimeout(isDoRev.bind(null, file), 500);
+        }
+    }
+    //console.log(jsons);
+    isDoRev(revPath+project+'/js/rev-manifest.json');  
+}
+
+//process rev img refs
+function revImgRef(project){
+    var isPublic = publicProjects.indexOf(project)!==-1,
+        prefix = buildPath+( isPublic ? "" : project+"/" ),
+        arr = [prefix+'**/*.html', prefix+'**/*.css', prefix+'**/*.js', prefix+'**/*.'+htmlSourceSuffix];
+
+    arr = arr.filter(function(item, idx){
+        return arr.indexOf(item) === idx;
+    })
+
+    var jsons = [revPath+project+'/image/*.json'].concat(arr);
+    function isDoRev(file){
+
+        if(fs.existsSync(file)){
+            //console.log(fs.readFileSync(file, "utf-8"), jsons)
+            return gulp.src(jsons)                                 
+                .pipe(revCollector())              
+                .on('end', function(){
+                    runSequence('build:revOthers');
+                })         
+                .pipe(gulp.dest(buildPath+(isPublic ? "" : project))); 
+        }else{
+            setTimeout(isDoRev.bind(null, file), 500);
+        }
+    }
+    //console.log(jsons);
+    isDoRev(revPath+project+'/image/rev-manifest.json');    
+}
+
+//restore static refs
+function restore(project, suffix){
+    var assets = useref.assets({
+        searchPath: buildPath,
+        transformPath: function (filePath) {
+            return filePath.replace(new RegExp('\.'+cssSourceSuffix+'$'), '.css');
+        }
+    });
+
+    return gulp.src(buildPath+project+'/**/*.'+suffix)
+        .pipe(assets)
+        .pipe(rev()) 
+        .pipe(assets.restore())
+        .pipe(useref())
+        .pipe(gulp.dest(buildPath+project))
+        .pipe(rev.manifest())
+        .pipe(gulp.dest(revPath+project+'/restore'));;
+}
+
+gulp.task('clean', function () {
+    deleteFolderRecursive(buildPath+project);
+    deleteFolderRecursive(revPath+project);
+});
+
+gulp.task('build:js', function(){
+    processJs(project);
+});
+
+gulp.task('build:css', function(){
+    processCss(project);
+});
+
+gulp.task('build:image', function(){
+    processImg(project);
+});
+
+gulp.task('build:cpstatic', function(){
+    return copySource(project, ['!**/*.map', '!**/*.'+jsSourceSuffix, '!**/*.'+cssSourceSuffix]);
+});
+
+gulp.task('build:restore', function(){
+    return restore(project, htmlSourceSuffix);
+})
+
+gulp.task('build:copyPublic', function(){
+    return copyPublic(project);
+});
+
+gulp.task('build:static', ['build:css', 'build:js', 'build:image']);
+gulp.task('build:cp', ['build:copyPublic', "build:cpstatic"])
+
+gulp.task('build:revImages', function(){
+    return revImgRef(project);
+});
+
+gulp.task('build:revOthers', function(){
+    return revControllPath(project);
+});
+
+gulp.task('build', ['clean', 'to-es5', 'to-css'], function(){
+    return runSequence('build:cp', 'build:restore', 'build:static');
+});

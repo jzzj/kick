@@ -61,11 +61,6 @@ var fileDevManager = (function(){
 		
 		return function(results, prefix){
 			if(!Array.isArray(results)){
-				if(!prefix){
-					var ret = results.match(rfolderFile);
-					results = ret[2];
-					prefix = ret[1];
-				}
 				results = [results];
 			}
 			
@@ -73,16 +68,28 @@ var fileDevManager = (function(){
 			/**
 			* 每个文件对应该文件的所在路径前缀 => 为了得到依赖文件的正确路径！
 			*/
-			
+
 			results.forEach(function(tmp){
 				var ret = filePathManager.getCurrentFilePathWithPrefix(tmp);
 				if(ret){
-					
 					FileDevMaps[tmp] = mapDev(tmp, ret.prefix);
 				}else{
-					filePathManager.setPathWithFile(tmp, prefix+tmp.match(rprefix)[0]);
-					
-					FileDevMaps[prefix+tmp] = mapDev(prefix+tmp, prefix);
+					var reg;
+					if(prefix){
+						reg = new RegExp("("+prefix+".+\/)(.+)$");
+					}else{
+						reg = rfolderFile;
+					}
+					var ret = tmp.match(reg);
+					if(ret){
+						var file = ret[2],
+							path = ret[1];
+						filePathManager.setPathWithFile(file, path);
+						
+						FileDevMaps[path+file] = mapDev(path+file, path);
+					}else{
+						console.log(tmp, 'file is not right.');
+					}
 				}
 			});
 			//console.log(filePathManager.getFullMap())
@@ -97,7 +104,7 @@ var fileDevManager = (function(){
 				return (fs.readFileSync(tmp, "utf-8").match(rimports) || [])
 					.map(function(i){
 						var ret = i.match(rmodule),
-							module = ret[1] + ".js";
+							module = ret[1];
 						
 						var prefix = filePathManager.getCurrentFilePathWithPrefix(tmp).prefix;
 						var file = filePathManager.getCurrentFilePathWithPrefix(module, prefix).file;
@@ -133,6 +140,7 @@ var fileDevManager = (function(){
 		updateFileDevMaps.apply(null, arguments);
 		updateDevsMap();
 		console.log('map is ready!');
+		//console.log(FileDevMaps);
 	},
 	
 	updateDevsMap = function(){
